@@ -27,8 +27,16 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release
 
+      - name: List build structure
+        run: |
+          echo "=== BUILD DIR ==="
+          dir build/windows
+          dir build/windows/x64
+          dir build/windows/x64/runner
+          dir build/windows/x64/runner/Release
+
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
           name: flutter-windows-build
-          path: build/windows/runner/Release
+          path: build/windows/x64/runner/Release
