@@ -1,4 +1,4 @@
-#define SourceDir "{#GetEnv('WORKSPACE')}"
+#define SourceDir "{#GetEnv('GITHUB_WORKSPACE')}"
 
 [Setup]
 AppName=XML Parser
@@ -11,8 +11,8 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "{#SourceDir}\build\windows\x64\runner\Release\*"; DestDir: "{app}";
-Flags: recursesubdirs createallsubdirs
+Source: "{#SourceDir}\build\windows\x64\runner\Release\*"; \
+    DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\XML Parser"; Filename: "{app}\xml_parser.exe"

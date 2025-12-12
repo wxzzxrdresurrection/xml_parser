@@ -23,15 +23,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Clean project
+        run: flutter clean
+
       - name: Build Windows Release
         run: flutter build windows --release
 
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: Set workspace env var
-        run: |
-          echo "WORKSPACE=$env:GITHUB_WORKSPACE" >> $env:GITHUB_ENV
+      - name: Create installer folder
+        run: mkdir installer
 
       - name: Build Installer
         run: iscc windows/installer.iss
