@@ -1,3 +1,5 @@
+#define SourceDir "{#GetEnv('WORKSPACE')}"
+
 [Setup]
 AppName=XML Parser
 AppVersion=1.0.0
@@ -9,7 +11,8 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "{#SourceDir}\build\windows\x64\runner\Release\*"; DestDir: "{app}";
+Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\XML Parser"; Filename: "{app}\xml_parser.exe"

@@ -29,16 +29,26 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: Verify Release folder
+      - name: List build folder
         run: |
-          echo "Checking Release folder..."
-          dir build/windows/x64/runner/Release
+          echo "Listing build directory..."
+          dir build
+          echo "Listing build/windows..."
+          dir build/windows
+          echo "Listing build/windows/runner..."
+          dir build/windows/runner
+          echo "Listing build/windows/x64/runner..."
+          dir build/windows/x64/runner
+
+      - name: Set workspace env var
+        run: |
+          echo "WORKSPACE=$env:GITHUB_WORKSPACE" >> $env:GITHUB_ENV
 
       - name: Build Installer
         run: iscc windows/installer.iss
 
-      - name: Upload Installer
+      - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
           name: XMLParserInstaller
-          path: installer/*.exe
+          path: installer
