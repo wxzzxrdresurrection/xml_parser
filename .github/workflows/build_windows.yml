@@ -29,17 +29,6 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: List build folder
-        run: |
-          echo "Listing build directory..."
-          dir build
-          echo "Listing build/windows..."
-          dir build/windows
-          echo "Listing build/windows/runner..."
-          dir build/windows/runner
-          echo "Listing build/windows/x64/runner..."
-          dir build/windows/x64/runner
-
       - name: Set workspace env var
         run: |
           echo "WORKSPACE=$env:GITHUB_WORKSPACE" >> $env:GITHUB_ENV
