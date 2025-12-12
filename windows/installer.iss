@@ -11,8 +11,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "{#SourceDir}\build\windows\x64\runner\Release\*"; \
-    DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "{#GetEnv('GITHUB_WORKSPACE')}\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\XML Parser"; Filename: "{app}\xml_parser.exe"
