@@ -29,6 +29,17 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
+      - name: List build folder
+        run: |
+          echo "Listing build directory..."
+          dir build
+          echo "Listing build/windows..."
+          dir build/windows
+          echo "Listing build/windows/runner..."
+          dir build/windows/runner
+          echo "Listing build/windows/x64/runner..."
+          dir build/windows/x64/runner
+
       - name: Build Installer
         run: iscc windows/installer.iss
 
