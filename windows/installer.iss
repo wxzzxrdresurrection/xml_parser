@@ -13,11 +13,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "build\windows\x64\runner\Release\xml_parser.exe"; DestDir: "{app}";
-Source: "build\windows\x64\runner\Release\flutter_windows.dll"; DestDir: "{app}";
-Source: "build\windows\x64\runner\Release\icudtl.dat"; DestDir: "{app}";
-
-Source: "build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: recursesubdirs
+Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\XML Parser"; Filename: "{app}\xml_parser.exe"
