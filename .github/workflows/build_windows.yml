@@ -41,5 +41,5 @@ jobs:
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: XMLParserInstaller
-          path: windows/installer/XMLParserInstaller.exe
+          name: XMLParserSetup
+          path: windows/installer/XMLParserSetup.exe
