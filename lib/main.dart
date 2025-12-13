@@ -1,18 +1,49 @@
 import 'dart:io';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
 import 'package:xml_parser/services/db.dart';
 import 'ui/pages/home_page.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+  final logFile = File('${Directory.current.path}\\flutter_log.txt');
+
+  void log(String message) {
+    logFile.writeAsStringSync(
+      '${DateTime.now()} | $message\n',
+      mode: FileMode.append,
+    );
   }
-  await DatabaseHelper.instance.database;
-  runApp(MyApp());
+
+  // 🔥 Captura errores de Flutter
+  FlutterError.onError = (FlutterErrorDetails details) {
+    log('FLUTTER ERROR: ${details.exception}');
+    log(details.stack.toString());
+  };
+
+  // 🔥 Captura errores async / isolate
+  runZonedGuarded(() async {
+    log('APP START');
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      log('INIT SQLITE FFI');
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
+    log('OPEN DATABASE');
+    await DatabaseHelper.instance.database;
+
+    log('RUN APP');
+    runApp(const MyApp());
+  }, (error, stack) {
+    log('FATAL ERROR: $error');
+    log(stack.toString());
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -31,9 +62,8 @@ class _MyAppState extends State<MyApp> {
 
   void toggleTheme() {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.light
-          ? ThemeMode.dark
-          : ThemeMode.light;
+      _themeMode =
+          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     });
   }
 
