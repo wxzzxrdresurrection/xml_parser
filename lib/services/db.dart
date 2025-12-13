@@ -1,24 +1,33 @@
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 import '../models/products.dart';
+import 'dart:io';
 
 class DatabaseHelper {
-  static final DatabaseHelper instance = DatabaseHelper._init();
-  static Database? _database;
+  DatabaseHelper._();
+  static final DatabaseHelper instance = DatabaseHelper._();
 
-  DatabaseHelper._init();
+  Database? _database;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('cfdi_reader.db');
+    _database = await _initDB();
     return _database!;
   }
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+  Future<Database> _initDB() async {
+    final baseDir = Platform.environment['LOCALAPPDATA'];
+    if (baseDir == null) {
+      throw Exception('LOCALAPPDATA not found');
+    }
 
+    final dbDir = Directory(p.join(baseDir, 'XMLParser'));
+    if (!dbDir.existsSync()) {
+      dbDir.createSync(recursive: true);
+    }
+
+    final path = p.join(dbDir.path, 'xml_parser.db');
     return await openDatabase(
       path,
       version: 1,
