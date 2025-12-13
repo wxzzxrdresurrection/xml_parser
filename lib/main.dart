@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:async';
-
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -10,22 +10,31 @@ import 'ui/pages/home_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final logFile = File('${Directory.current.path}\\flutter_log.txt');
+  final logDir = Directory(
+    p.join(
+      Platform.environment['LOCALAPPDATA'] ?? Directory.systemTemp.path,
+      'XMLParser',
+    ),
+  );
 
-  void log(String message) {
+  if (!logDir.existsSync()) {
+    logDir.createSync(recursive: true);
+  }
+
+  final logFile = File(p.join(logDir.path, 'flutter_log.txt'));
+
+  void log(String msg) {
     logFile.writeAsStringSync(
-      '${DateTime.now()} | $message\n',
+      '${DateTime.now()} | $msg\n',
       mode: FileMode.append,
     );
   }
 
-  // 🔥 Captura errores de Flutter
-  FlutterError.onError = (FlutterErrorDetails details) {
+  FlutterError.onError = (details) {
     log('FLUTTER ERROR: ${details.exception}');
     log(details.stack.toString());
   };
 
-  // 🔥 Captura errores async / isolate
   runZonedGuarded(() async {
     log('APP START');
 
