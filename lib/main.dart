@@ -1,9 +1,16 @@
+import 'dart:io';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:xml_parser/services/db.dart';
 import 'ui/pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   await DatabaseHelper.instance.database;
   runApp(MyApp());
 }
