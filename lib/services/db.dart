@@ -1,4 +1,5 @@
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:async';
 import '../models/products.dart';
@@ -17,19 +18,20 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    final baseDir = Platform.environment['LOCALAPPDATA'];
-    if (baseDir == null) {
-      throw Exception('LOCALAPPDATA not found');
+     print('| GET APP SUPPORT DIR');
+
+    final Directory appDir = await getApplicationSupportDirectory();
+    print('| APP DIR: ${appDir.path}');
+
+    if (!await appDir.exists()) {
+      await appDir.create(recursive: true);
     }
 
-    final dbDir = Directory(p.join(baseDir, 'XMLParser'));
-    if (!dbDir.existsSync()) {
-      dbDir.createSync(recursive: true);
-    }
+    final String dbPath = p.join(appDir.path, 'xml_parser.db');
+    print('| DB PATH: $dbPath');
 
-    final path = p.join(dbDir.path, 'xml_parser.db');
     return await openDatabase(
-      path,
+      dbPath,
       version: 1,
       onCreate: _createDB,
     );
