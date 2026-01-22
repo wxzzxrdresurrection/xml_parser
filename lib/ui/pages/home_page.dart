@@ -190,7 +190,7 @@ class _HomePageState extends State<HomePage> {
                 ), // Espaciador
               ],
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 40),
             Expanded(
               child: isLoading
                   ? Center(child: CircularProgressIndicator())
