@@ -24,7 +24,6 @@ class _HomePageState extends State<HomePage> {
     DataColumn(label: Text('Descripción')),
     DataColumn(label: Text('Clave ProdServ')),
     DataColumn(label: Text('Clave Unidad')),
-    DataColumn(label: Text('Unidad')),
     DataColumn(label: Text('Cantidad')),
     DataColumn(label: Text('Valor Unitario')),
     DataColumn(label: Text('Importe')),
@@ -67,6 +66,12 @@ class _HomePageState extends State<HomePage> {
       }
     });
   }
+
+  final currencyFormatter = NumberFormat.currency(
+    locale: 'es_MX',
+    symbol: '\$',
+    decimalDigits: 2,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +141,9 @@ class _HomePageState extends State<HomePage> {
                         p.description,
                         p.identificationNumber,
                         p.unitCode,
-                        p.unitName,
                         p.quantity,
-                        p.unitPrice,
-                        p.totalAmount,
+                        currencyFormatter.format(p.unitPrice),
+                        currencyFormatter.format(p.totalAmount),
                         DateFormat('dd/MM/yyyy').format(p.createdAt),
                       ]).toList(),
                       rowsPerPage: 10,

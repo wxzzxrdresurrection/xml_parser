@@ -33,7 +33,6 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 📌 Contenedor toma solo el tamaño necesario
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
@@ -43,7 +42,6 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
             ],
             border: Border.all(color: Theme.of(context).dividerColor, width: 1),
           ),
-
           child: LayoutBuilder(
             builder: (context, constraints) {
               final table = DataTable(
