@@ -44,19 +44,40 @@ class XMLUploadDialog extends StatelessWidget {
                   results.addAll(await CfdiParser.parse(xmlContent));
                 }
                 if (results.isNotEmpty && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Se agregaron ${results.whereType<int>().length} productos.'),
-                    ),
-                  );
                   Navigator.of(context).pop(true);
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Carga exitosa'),
+                        content: Text(
+                          'Se agregaron ${results.whereType<int>().length} productos.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text('Aceptar'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
                 } else {
-                  if (context.mounted){
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('No se agregaron productos.'),
-                      ),
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Sin cambios'),
+                          content: Text('No se agregaron productos.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('Aceptar'),
+                            ),
+                          ],
+                        );
+                      },
                     );
                   }
                 }

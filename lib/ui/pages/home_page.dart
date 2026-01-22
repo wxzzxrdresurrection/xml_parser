@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:xml_parser/services/excel_creator.dart';
 import 'package:xml_parser/ui/widgets/title_bar.dart';
 import '../widgets/products_table.dart';
 import '../../models/products.dart';
 import '../../services/db.dart';
 import 'package:intl/intl.dart';
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,7 +59,9 @@ class _HomePageState extends State<HomePage> {
         filteredProducts = products.where((product) {
           final searchLower = query.toLowerCase();
           return product.description.toLowerCase().contains(searchLower) ||
-              product.identificationNumber.toLowerCase().contains(searchLower) ||
+              product.identificationNumber.toLowerCase().contains(
+                searchLower,
+              ) ||
               product.unitCode.toLowerCase().contains(searchLower) ||
               product.unitName.toLowerCase().contains(searchLower);
         }).toList();
@@ -128,6 +130,64 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+                SizedBox(
+                  width: 300,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () async {
+
+                      String? filePath = await ExcelCreator.createExcel(
+                        filteredProducts,
+                        columns,
+                      );
+                      if (filePath != null && context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('Exportación exitosa'),
+                              content: Text('Archivo guardado en:\n$filePath'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text('Aceptar'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } else if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('Exportación cancelada'),
+                              content: Text('No se guardó el archivo.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: Text('Aceptar'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    label: Text('Exportar a Excel'),
+                    icon: Icon(Icons.file_download),
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStatePropertyAll(
+                        Color.fromARGB(255, 4, 99, 21),
+                      ),
+                      foregroundColor: WidgetStatePropertyAll(Colors.white),
+                      shape: WidgetStatePropertyAll(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ), // Espaciador
               ],
             ),
             SizedBox(height: 20),
@@ -136,16 +196,20 @@ class _HomePageState extends State<HomePage> {
                   ? Center(child: CircularProgressIndicator())
                   : CustomPaginatedTable(
                       columns: columns,
-                      rows: filteredProducts.map((p) => [
-                        p.id,
-                        p.description,
-                        p.identificationNumber,
-                        p.unitCode,
-                        p.quantity,
-                        currencyFormatter.format(p.unitPrice),
-                        currencyFormatter.format(p.totalAmount),
-                        DateFormat('dd/MM/yyyy').format(p.createdAt),
-                      ]).toList(),
+                      rows: filteredProducts
+                          .map(
+                            (p) => [
+                              p.id,
+                              p.description,
+                              p.identificationNumber,
+                              p.unitCode,
+                              p.quantity,
+                              currencyFormatter.format(p.unitPrice),
+                              currencyFormatter.format(p.totalAmount),
+                              DateFormat('dd/MM/yyyy').format(p.createdAt),
+                            ],
+                          )
+                          .toList(),
                       rowsPerPage: 10,
                     ),
             ),
