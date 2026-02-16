@@ -68,13 +68,17 @@ class ExcelCreator {
     // Agregar encabezados
     List<String> headerTitles = [
       'ID',
+      'Proveedor',
       'Descripción',
       'Clave ProdServ',
       'Clave Unidad',
       'Cantidad',
       'Valor Unitario',
       'Importe',
-      'Fecha de Registro'
+      'Fecha Emisión',
+      'Folio',
+      'UUID',
+      'Fecha de Registro',
     ];
 
     for (int i = 0; i < headerTitles.length; i++) {
@@ -94,52 +98,78 @@ class ExcelCreator {
       cellId.value = IntCellValue(product.id ?? 0);
       cellId.cellStyle = isAlternateRow ? alternateNumberStyle : numberStyle;
 
-      // Columna 1: Descripción
-      var cellDesc = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex));
+      // Columna 1: Proveedor
+      var cellSupplier = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex));
+      cellSupplier.value = TextCellValue(product.supplierName ?? '');
+      cellSupplier.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
+
+      // Columna 2: Descripción (antes era 1)
+      var cellDesc = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex));
       cellDesc.value = TextCellValue(product.description);
       cellDesc.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
 
-      // Columna 2: Clave ProdServ
-      var cellIdNum = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex));
+      // Columna 3: Clave ProdServ (antes era 2)
+      var cellIdNum = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex));
       cellIdNum.value = TextCellValue(product.identificationNumber);
       cellIdNum.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
 
-      // Columna 3: Clave Unidad
-      var cellUnitCode = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex));
+      // Columna 4: Clave Unidad (antes era 3)
+      var cellUnitCode = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex));
       cellUnitCode.value = TextCellValue(product.unitCode);
       cellUnitCode.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
 
-      // Columna 4: Cantidad
-      var cellQty = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex));
+      // Columna 5: Cantidad (antes era 4)
+      var cellQty = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex));
       cellQty.value = TextCellValue(quantityFormatter.format(product.quantity));
       cellQty.cellStyle = isAlternateRow ? alternateNumberStyle : numberStyle;
 
-      // Columna 5: Valor Unitario
-      var cellPrice = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex));
+      // Columna 6: Valor Unitario (antes era 5)
+      var cellPrice = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex));
       cellPrice.value = TextCellValue(currencyFormatter.format(product.unitPrice));
       cellPrice.cellStyle = isAlternateRow ? alternateNumberStyle : numberStyle;
 
-      // Columna 6: Importe
-      var cellTotal = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex));
+      // Columna 7: Importe (antes era 6)
+      var cellTotal = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex));
       cellTotal.value = TextCellValue(currencyFormatter.format(product.totalAmount));
       cellTotal.cellStyle = isAlternateRow ? alternateNumberStyle : numberStyle;
 
-      // Columna 7: Fecha
-      var cellDate = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex));
+      // Columna 8: Fecha Emisión (NUEVO)
+      var cellInvoiceDate = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: rowIndex));
+      cellInvoiceDate.value = TextCellValue(
+        product.invoiceDate == null ? '' : dateFormatter.format(product.invoiceDate!),
+      );
+      cellInvoiceDate.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
+
+      // Columna 9: Folio (NUEVO)
+      var cellFolio = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: rowIndex));
+      cellFolio.value = TextCellValue(product.invoiceFolio ?? '');
+      cellFolio.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
+
+      // Columna 10: UUID (NUEVO)
+      var cellUuid = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 10, rowIndex: rowIndex));
+      cellUuid.value = TextCellValue(product.invoiceUuid ?? '');
+      cellUuid.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
+
+      // Columna 11: Fecha de Registro (antes era 7)
+      var cellDate = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: 11, rowIndex: rowIndex));
       cellDate.value = TextCellValue(dateFormatter.format(product.createdAt));
       cellDate.cellStyle = isAlternateRow ? alternateRowStyle : dataStyle;
     }
 
     // Ajustar ancho de columnas
-    sheetObject.setColumnWidth(0, 8);   // ID
-    sheetObject.setColumnWidth(1, 40);  // Descripción
-    sheetObject.setColumnWidth(2, 18);  // Clave ProdServ
-    sheetObject.setColumnWidth(3, 15);  // Clave Unidad
-    sheetObject.setColumnWidth(4, 12);  // Cantidad
-    sheetObject.setColumnWidth(5, 16);  // Valor Unitario
-    sheetObject.setColumnWidth(6, 16);  // Importe
-    sheetObject.setColumnWidth(7, 18);  // Fecha
-
+    sheetObject.setColumnWidth(0, 8);    // ID
+    sheetObject.setColumnWidth(1, 30);   // Proveedor
+    sheetObject.setColumnWidth(2, 40);   // Descripción
+    sheetObject.setColumnWidth(3, 18);   // Clave ProdServ
+    sheetObject.setColumnWidth(4, 15);   // Clave Unidad
+    sheetObject.setColumnWidth(5, 12);   // Cantidad
+    sheetObject.setColumnWidth(6, 16);   // Valor Unitario
+    sheetObject.setColumnWidth(7, 16);   // Importe
+    sheetObject.setColumnWidth(8, 18);   // Fecha Emisión
+    sheetObject.setColumnWidth(9, 12);   // Folio
+    sheetObject.setColumnWidth(10, 36);  // UUID
+    sheetObject.setColumnWidth(11, 18);  // Fecha Registro
+    
     // Save the file
     List<int>? fileBytes = excel.encode();
     if (fileBytes == null) {

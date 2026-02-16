@@ -18,15 +18,22 @@ class _HomePageState extends State<HomePage> {
   List<Product> filteredProducts = [];
   bool isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  static const String _allProvidersValue = '__ALL__';
+  String _selectedProvider = _allProvidersValue;
+  List<String> _providerOptions = [];
 
   final List<DataColumn> columns = const [
     DataColumn(label: Text('ID')),
+    DataColumn(label: Text('Proveedor')),
     DataColumn(label: Text('Descripción')),
     DataColumn(label: Text('Clave ProdServ')),
     DataColumn(label: Text('Clave Unidad')),
     DataColumn(label: Text('Cantidad')),
     DataColumn(label: Text('Valor Unitario')),
     DataColumn(label: Text('Importe')),
+    DataColumn(label: Text('Fecha Emisión')),
+    DataColumn(label: Text('Folio')),
+    DataColumn(label: Text('UUID')),
     DataColumn(label: Text('Fecha de Registro')),
   ];
 
@@ -44,30 +51,55 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadProducts() async {
     final loadedProducts = await DatabaseHelper.instance.getProducts();
+    final providers = loadedProducts
+        .map((p) => (p.supplierName ?? '').trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
     setState(() {
       products = loadedProducts;
-      filteredProducts = loadedProducts;
+      _providerOptions = providers;
+      if (_selectedProvider != _allProvidersValue &&
+          !_providerOptions.contains(_selectedProvider)) {
+        _selectedProvider = _allProvidersValue;
+      }
+      _applyFilters();
       isLoading = false;
     });
   }
 
   void _filterProducts(String query) {
     setState(() {
-      if (query.isEmpty) {
-        filteredProducts = products;
-      } else {
-        filteredProducts = products.where((product) {
-          final searchLower = query.toLowerCase();
-          return product.description.toLowerCase().contains(searchLower) ||
-              product.identificationNumber.toLowerCase().contains(
-                searchLower,
-              ) ||
-              product.unitCode.toLowerCase().contains(searchLower) ||
-              product.unitName.toLowerCase().contains(searchLower);
-        }).toList();
-      }
+      _applyFilters();
     });
   }
+
+  void _applyFilters() {
+    final query = _searchController.text.toLowerCase();
+    final provider = _selectedProvider;
+
+    filteredProducts = products.where((product) {
+      // Filtro de proveedor
+      final matchesProvider =
+          provider == _allProvidersValue ||
+          (product.supplierName ?? '').trim() == provider;
+      if (!matchesProvider) return false;
+
+      // Filtro de texto (SIN incluir proveedor)
+      if (query.isEmpty) return true;
+      return product.description.toLowerCase().contains(query) ||
+          product.identificationNumber.toLowerCase().contains(query) ||
+          product.unitCode.toLowerCase().contains(query) ||
+          product.unitName.toLowerCase().contains(query) ||
+          (product.invoiceFolio ?? '').toLowerCase().contains(query) ||
+          (product.invoiceUuid ?? '').toLowerCase().contains(query);
+    }).toList();
+  }
+
+  String formatDate(DateTime? value) =>
+      value == null ? '-' : DateFormat('dd/MM/yyyy').format(value);
 
   final currencyFormatter = NumberFormat.currency(
     locale: 'es_MX',
@@ -131,10 +163,49 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 SizedBox(
+                  width: 240,
+                  height: 35,
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedProvider,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: 'Proveedor',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      labelStyle: TextStyle(fontSize: 14),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: _allProvidersValue,
+                        child: Text('Todos'),
+                      ),
+                      ..._providerOptions.map((provider) {
+                        return DropdownMenuItem(
+                          value: provider,
+                          child: Text(
+                            provider,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedProvider = value;
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(
                   width: 300,
                   child: FilledButton.tonalIcon(
                     onPressed: () async {
-
                       String? filePath = await ExcelCreator.createExcel(
                         filteredProducts,
                         columns,
@@ -187,7 +258,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                ), // Espaciador
+                ),
               ],
             ),
             SizedBox(height: 40),
@@ -200,13 +271,17 @@ class _HomePageState extends State<HomePage> {
                           .map(
                             (p) => [
                               p.id,
+                              p.supplierName ?? '-',
                               p.description,
                               p.identificationNumber,
                               p.unitCode,
                               p.quantity,
                               currencyFormatter.format(p.unitPrice),
                               currencyFormatter.format(p.totalAmount),
-                              DateFormat('dd/MM/yyyy').format(p.createdAt),
+                              formatDate(p.invoiceDate),
+                              p.invoiceFolio ?? '-',
+                              p.invoiceUuid ?? '-',
+                              formatDate(p.createdAt),
                             ],
                           )
                           .toList(),

@@ -124,14 +124,22 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
             final col = entry.value;
 
             double width;
-            if (index == 1) {
-              width = 200;
-            } else if (index == 0) {
-              width = 50;
-            } else if (index == 2 || index == 3) {
-              width = 90;
-            } else if (index == 7) {
-              width = 100;
+            if (index == 0) {
+              width = 50;   // ID
+            } else if (index == 1) {
+              width = 180;  // Proveedor
+            } else if (index == 2) {
+              width = 200;  // Descripción
+            } else if (index == 3 || index == 4) {
+              width = 90;   // Claves
+            } else if (index == 5 || index == 6 || index == 7) {
+              width = 90;   // Cantidad, Valores
+            } else if (index == 8 || index == 11) {
+              width = 110;  // Fechas
+            } else if (index == 9) {
+              width = 90;   // Folio
+            } else if (index == 10) {
+              width = 220;  // UUID
             } else {
               width = 90;
             }
@@ -187,25 +195,26 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
                       final colIndex = entry.key;
                       final c = entry.value;
 
-                      // Anchos específicos para cada columna (igual que los headers)
                       double width;
-                      if (colIndex == 1) {
-                        // Descripción
-                        width = 200;
-                      } else if (colIndex == 0) {
-                        // ID
-                        width = 50;
-                      } else if (colIndex == 2 || colIndex == 3) {
-                        // Claves
-                        width = 90;
-                      } else if (colIndex == 7) {
-                        // Fecha
-                        width = 100;
+                      if (colIndex == 0) {
+                        width = 50;   // ID
+                      } else if (colIndex == 1) {
+                        width = 180;  // Proveedor
+                      } else if (colIndex == 2) {
+                        width = 200;  // Descripción
+                      } else if (colIndex == 3 || colIndex == 4) {
+                        width = 90;   // Claves
+                      } else if (colIndex == 5 || colIndex == 6 || colIndex == 7) {
+                        width = 90;   // Cantidad, Valores
+                      } else if (colIndex == 8 || colIndex == 11) {
+                        width = 110;  // Fechas
+                      } else if (colIndex == 9) {
+                        width = 90;   // Folio
+                      } else if (colIndex == 10) {
+                        width = 220;  // UUID
                       } else {
-                        // Cantidad, valores
                         width = 90;
                       }
-
                       return DataCell(
                         SizedBox(
                           width: width,
