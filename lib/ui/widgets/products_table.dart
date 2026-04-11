@@ -4,12 +4,16 @@ class CustomPaginatedTable extends StatefulWidget {
   final List<DataColumn> columns;
   final List<List<dynamic>> rows;
   final int rowsPerPage;
+  final int? sortColumnIndex;
+  final bool sortAscending;
 
   const CustomPaginatedTable({
     super.key,
     required this.columns,
     required this.rows,
     this.rowsPerPage = 10,
+    this.sortColumnIndex,
+    this.sortAscending = true,
   });
 
   @override
@@ -24,6 +28,24 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
   void initState() {
     super.initState();
     _rowsPerPage = widget.rowsPerPage;
+  }
+
+  @override
+  void didUpdateWidget(CustomPaginatedTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.rows != widget.rows) {
+      setState(() {
+        _currentPage = 0;
+      });
+    }
+
+    if (oldWidget.rowsPerPage != widget.rowsPerPage) {
+      setState(() {
+        _rowsPerPage = widget.rowsPerPage;
+        _currentPage = 0;
+      });
+    }
   }
 
   @override
@@ -63,23 +85,26 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
                   ),
                 ),
                 SizedBox(width: 8),
-                DropdownButton<int>(
-                  value: _rowsPerPage,
-                  underline: Container(),
-                  items: [10, 20, 50].map((int value) {
-                    return DropdownMenuItem<int>(
-                      value: value,
-                      child: Text('$value'),
-                    );
-                  }).toList(),
-                  onChanged: (int? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _rowsPerPage = newValue;
-                        _currentPage = 0;
-                      });
-                    }
-                  },
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: DropdownButton<int>(
+                    value: _rowsPerPage,
+                    underline: Container(),
+                    items: [10, 20, 50].map((int value) {
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text('$value'),
+                      );
+                    }).toList(),
+                    onChanged: (int? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _rowsPerPage = newValue;
+                          _currentPage = 0;
+                        });
+                      }
+                    },
+                  ),
                 ),
                 SizedBox(width: 16),
                 Text(
@@ -97,12 +122,14 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
                   onPressed: _currentPage > 0
                       ? () => setState(() => _currentPage--)
                       : null,
+                  mouseCursor: SystemMouseCursors.click,
                   icon: const Icon(Icons.arrow_back),
                 ),
                 IconButton(
                   onPressed: _currentPage < totalPages - 1
                       ? () => setState(() => _currentPage++)
                       : null,
+                  mouseCursor: SystemMouseCursors.click,
                   icon: const Icon(Icons.arrow_forward),
                 ),
               ],
@@ -114,6 +141,8 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
           columnSpacing: 12,
           horizontalMargin: 12,
           headingRowHeight: 48,
+          sortColumnIndex: widget.sortColumnIndex,
+          sortAscending: widget.sortAscending,
           headingRowColor: WidgetStateProperty.resolveWith(
             (states) => Theme.of(context).brightness == Brightness.dark
                 ? Colors.grey[850]
@@ -122,6 +151,7 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
           columns: widget.columns.asMap().entries.map((entry) {
             final index = entry.key;
             final col = entry.value;
+            final isSortable = col.onSort != null;
 
             double width;
             if (index == 0) {
@@ -144,19 +174,29 @@ class _CustomPaginatedTableState extends State<CustomPaginatedTable> {
               width = 90;
             }
 
-            return DataColumn(
-              label: SizedBox(
-                width: width,
-                child: Text(
-                  (col.label as Text).data ?? '',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            final headerLabel = SizedBox(
+              width: width,
+              child: Text(
+                (col.label as Text).data ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
+            );
+
+            return DataColumn(
+              numeric: col.numeric,
+              tooltip: col.tooltip,
+              onSort: col.onSort,
+              label: isSortable
+                  ? MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: headerLabel,
+                    )
+                  : headerLabel,
             );
           }).toList(),
           rows: const [], // 👈 IMPORTANTE: sin filas

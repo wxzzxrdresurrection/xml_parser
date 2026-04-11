@@ -21,21 +21,34 @@ class _HomePageState extends State<HomePage> {
   static const String _allProvidersValue = '__ALL__';
   String _selectedProvider = _allProvidersValue;
   List<String> _providerOptions = [];
+  int? _sortColumnIndex;
+  bool _sortAscending = true;
 
-  final List<DataColumn> columns = const [
-    DataColumn(label: Text('ID')),
-    DataColumn(label: Text('Proveedor')),
-    DataColumn(label: Text('Descripción')),
-    DataColumn(label: Text('Clave ProdServ')),
-    DataColumn(label: Text('Clave Unidad')),
-    DataColumn(label: Text('Cantidad')),
-    DataColumn(label: Text('Valor Unitario')),
-    DataColumn(label: Text('Importe')),
-    DataColumn(label: Text('Fecha Emisión')),
-    DataColumn(label: Text('Folio')),
-    DataColumn(label: Text('UUID')),
-    DataColumn(label: Text('Fecha de Registro')),
-  ];
+  List<DataColumn> _buildColumns() {
+    return [
+      const DataColumn(label: Text('ID')),
+      const DataColumn(label: Text('Proveedor')),
+      const DataColumn(label: Text('Descripción')),
+      const DataColumn(label: Text('Clave ProdServ')),
+      const DataColumn(label: Text('Clave Unidad')),
+      const DataColumn(label: Text('Cantidad')),
+      const DataColumn(label: Text('Valor Unitario')),
+      const DataColumn(label: Text('Importe')),
+      DataColumn(
+        label: const Text('Fecha Emisión'),
+        onSort: (_, ascending) {
+          setState(() {
+            _sortColumnIndex = 8;
+            _sortAscending = ascending;
+            _applyFilters();
+          });
+        },
+      ),
+      const DataColumn(label: Text('Folio')),
+      const DataColumn(label: Text('UUID')),
+      const DataColumn(label: Text('Fecha de Registro')),
+    ];
+  }
 
   @override
   void initState() {
@@ -70,7 +83,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _filterProducts(String query) {
+  void _filterProducts(String _) {
     setState(() {
       _applyFilters();
     });
@@ -80,7 +93,7 @@ class _HomePageState extends State<HomePage> {
     final query = _searchController.text.toLowerCase();
     final provider = _selectedProvider;
 
-    filteredProducts = products.where((product) {
+    final filtered = products.where((product) {
       // Filtro de proveedor
       final matchesProvider =
           provider == _allProvidersValue ||
@@ -96,6 +109,22 @@ class _HomePageState extends State<HomePage> {
           (product.invoiceFolio ?? '').toLowerCase().contains(query) ||
           (product.invoiceUuid ?? '').toLowerCase().contains(query);
     }).toList();
+
+    if (_sortColumnIndex == 8) {
+      filtered.sort((a, b) {
+        final aDate = a.invoiceDate;
+        final bDate = b.invoiceDate;
+
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+
+        final comparison = aDate.compareTo(bDate);
+        return _sortAscending ? comparison : -comparison;
+      });
+    }
+
+    filteredProducts = filtered;
   }
 
   String formatDate(DateTime? value) =>
@@ -109,6 +138,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final columns = _buildColumns();
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 70,
@@ -126,81 +157,90 @@ class _HomePageState extends State<HomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(
-                  width: 300,
-                  height: 35,
-                  child: TextFormField(
-                    controller: _searchController,
-                    onChanged: _filterProducts,
-                    cursorHeight: 14,
-                    cursorColor: Color.fromARGB(255, 53, 95, 177),
-                    decoration: InputDecoration(
-                      labelText: 'Buscar producto',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      labelStyle: TextStyle(fontSize: 14),
-                      prefixIcon: Icon(Icons.search, size: 20),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.clear, size: 20),
-                              onPressed: () {
-                                _searchController.clear();
-                                _filterProducts('');
-                              },
-                            )
-                          : null,
-                      focusColor: Color.fromARGB(255, 53, 95, 177),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color.fromARGB(255, 53, 95, 177),
-                          width: 2,
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 300,
+                      height: 35,
+                      child: TextFormField(
+                        controller: _searchController,
+                        onChanged: _filterProducts,
+                        cursorHeight: 14,
+                        cursorColor: Color.fromARGB(255, 53, 95, 177),
+                        decoration: InputDecoration(
+                          labelText: 'Buscar producto',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          labelStyle: TextStyle(fontSize: 14),
+                          prefixIcon: Icon(Icons.search, size: 20),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, size: 20),
+                                  mouseCursor: SystemMouseCursors.click,
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _filterProducts('');
+                                  },
+                                )
+                              : null,
+                          focusColor: Color.fromARGB(255, 53, 95, 177),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Color.fromARGB(255, 53, 95, 177),
+                              width: 2,
+                            ),
+                          ),
+                          floatingLabelStyle: TextStyle(
+                            color: Color.fromARGB(255, 53, 95, 177),
+                          ),
                         ),
                       ),
-                      floatingLabelStyle: TextStyle(
-                        color: Color.fromARGB(255, 53, 95, 177),
-                      ),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  width: 240,
-                  height: 35,
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedProvider,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: 'Proveedor',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      labelStyle: TextStyle(fontSize: 14),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: _allProvidersValue,
-                        child: Text('Todos'),
-                      ),
-                      ..._providerOptions.map((provider) {
-                        return DropdownMenuItem(
-                          value: provider,
-                          child: Text(
-                            provider,
-                            overflow: TextOverflow.ellipsis,
+                    SizedBox(width: 16),
+                    SizedBox(
+                      width: 240,
+                      height: 35,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedProvider,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: 'Proveedor',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            labelStyle: TextStyle(fontSize: 14),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
-                        );
-                      }).toList(),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedProvider = value;
-                        _applyFilters();
-                      });
-                    },
-                  ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: _allProvidersValue,
+                              child: Text('Todos'),
+                            ),
+                            ..._providerOptions.map((provider) {
+                              return DropdownMenuItem(
+                                value: provider,
+                                child: Text(
+                                  provider,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            })
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _selectedProvider = value;
+                              _applyFilters();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(
                   width: 300,
@@ -220,6 +260,11 @@ class _HomePageState extends State<HomePage> {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(),
+                                  style: ButtonStyle(
+                                    mouseCursor: WidgetStatePropertyAll(
+                                      SystemMouseCursors.click,
+                                    ),
+                                  ),
                                   child: Text('Aceptar'),
                                 ),
                               ],
@@ -236,6 +281,11 @@ class _HomePageState extends State<HomePage> {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(),
+                                  style: ButtonStyle(
+                                    mouseCursor: WidgetStatePropertyAll(
+                                      SystemMouseCursors.click,
+                                    ),
+                                  ),
                                   child: Text('Aceptar'),
                                 ),
                               ],
@@ -251,6 +301,9 @@ class _HomePageState extends State<HomePage> {
                         Color.fromARGB(255, 4, 99, 21),
                       ),
                       foregroundColor: WidgetStatePropertyAll(Colors.white),
+                      mouseCursor: WidgetStatePropertyAll(
+                        SystemMouseCursors.click,
+                      ),
                       shape: WidgetStatePropertyAll(
                         RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
@@ -267,6 +320,8 @@ class _HomePageState extends State<HomePage> {
                   ? Center(child: CircularProgressIndicator())
                   : CustomPaginatedTable(
                       columns: columns,
+                      sortColumnIndex: _sortColumnIndex,
+                      sortAscending: _sortAscending,
                       rows: filteredProducts
                           .map(
                             (p) => [

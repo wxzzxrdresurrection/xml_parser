@@ -87,7 +87,10 @@ class DatabaseHelper {
 
   Future<List<Product>> getProducts() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('products');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'products',
+      orderBy: 'invoiceDate DESC',
+    );
 
     return List.generate(maps.length, (i) {
       final invoiceDateRaw = maps[i]['invoiceDate'] as String?;
