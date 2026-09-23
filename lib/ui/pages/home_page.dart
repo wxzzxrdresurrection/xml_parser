@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   List<Product> products = [];
   List<Product> filteredProducts = [];
   bool isLoading = true;
+  String? _loadError;
   bool _isExporting = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
@@ -58,7 +59,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadProducts() async {
-    final loadedProducts = await DatabaseHelper.instance.getProducts();
+    final List<Product> loadedProducts;
+    try {
+      loadedProducts = await DatabaseHelper.instance.getProducts();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        isLoading = false;
+      });
+      return;
+    }
     final providers =
         loadedProducts
             .map((p) => (p.supplierName ?? '').trim())
@@ -76,6 +87,7 @@ class _HomePageState extends State<HomePage> {
         _selectedProvider = _allProvidersValue;
       }
       _applyFilters();
+      _loadError = null;
       isLoading = false;
     });
   }
@@ -241,7 +253,9 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (!isLoading && products.isNotEmpty) ...[
+                if (!isLoading &&
+                    _loadError == null &&
+                    products.isNotEmpty) ...[
                   SummaryCards(
                     products: filteredProducts,
                     totalProducts: products.length,
@@ -261,7 +275,22 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildContent() {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Cargando productos'),
+      );
+    }
+    if (_loadError != null) {
+      return EmptyState(
+        icon: Icons.error_outline,
+        title: 'No se pudieron cargar los productos',
+        message: 'Ocurrió un error al leer la base de datos. Intenta de nuevo.',
+        actionLabel: 'Reintentar',
+        actionIcon: Icons.refresh,
+        onAction: () {
+          setState(() => isLoading = true);
+          _loadProducts();
+        },
+      );
     }
     if (products.isEmpty) {
       return EmptyState(
@@ -296,10 +325,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildToolbar(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _buildToolbarRow(context, compact: constraints.maxWidth < 1000),
+    );
+  }
+
+  /// En ventanas angostas ([compact]) los campos se encogen y los botones
+  /// secundarios pasan a ser solo icono, para que nada se desborde.
+  Widget _buildToolbarRow(BuildContext context, {required bool compact}) {
+    final count = Formatters.integer.format(filteredProducts.length);
     return Row(
       children: [
         SizedBox(
-          width: 340,
+          width: compact ? 240 : 340,
           child: TextField(
             controller: _searchController,
             focusNode: _searchFocus,
@@ -323,7 +362,7 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(width: 12),
         SizedBox(
-          width: 260,
+          width: compact ? 220 : 260,
           child: DropdownButtonFormField<String>(
             // La key fuerza a reflejar el valor cuando se limpian los filtros.
             key: ValueKey(_selectedProvider),
@@ -335,9 +374,9 @@ class _HomePageState extends State<HomePage> {
               prefixIcon: Icon(Icons.storefront_outlined, size: 20),
             ),
             items: [
-              const DropdownMenuItem(
+              DropdownMenuItem(
                 value: _allProvidersValue,
-                child: Text('Todos los proveedores'),
+                child: Text(compact ? 'Todos' : 'Todos los proveedores'),
               ),
               ..._providerOptions.map((provider) {
                 return DropdownMenuItem(
@@ -357,12 +396,20 @@ class _HomePageState extends State<HomePage> {
         ),
         if (_hasActiveFilters) ...[
           const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: _clearFilters,
-            icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-            label: const Text('Limpiar filtros'),
-          ),
+          if (compact)
+            IconButton(
+              onPressed: _clearFilters,
+              tooltip: 'Limpiar filtros',
+              icon: const Icon(Icons.filter_alt_off_outlined),
+            )
+          else
+            TextButton.icon(
+              onPressed: _clearFilters,
+              icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+              label: const Text('Limpiar filtros'),
+            ),
         ],
+        const SizedBox(width: 12),
         const Spacer(),
         Tooltip(
           message: 'Exportar los productos visibles (Ctrl+E)',
@@ -387,7 +434,9 @@ class _HomePageState extends State<HomePage> {
             label: Text(
               _isExporting
                   ? 'Exportando…'
-                  : 'Exportar a Excel (${Formatters.integer.format(filteredProducts.length)})',
+                  : compact
+                  ? 'Exportar ($count)'
+                  : 'Exportar a Excel ($count)',
             ),
           ),
         ),

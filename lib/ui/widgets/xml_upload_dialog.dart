@@ -229,6 +229,7 @@ class _XMLUploadDialogState extends State<XMLUploadDialog> {
       children: [
         LinearProgressIndicator(
           value: total == 0 ? null : _processed / total,
+          semanticsLabel: 'Progreso de la carga',
           minHeight: 6,
           borderRadius: BorderRadius.circular(3),
         ),

@@ -56,6 +56,45 @@ void main() {
       sortProducts(list, 8, false);
       expect(list.map((p) => p.id), [3, 2, 1]);
     });
+    test('los empates se resuelven por id (orden estable)', () {
+      final date = DateTime(2025, 3, 1);
+      final list = List.generate(50, (i) => _product(50 - i, date: date));
+      sortProducts(list, 8, false);
+      expect(list.map((p) => p.id), List.generate(50, (i) => i + 1));
+    });
+  });
+
+  testWidgets('las cabeceras anuncian el estado del orden', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _wrap(
+        ProductsTable(
+          products: [_product(1)],
+          sortColumnIndex: 7,
+          sortAscending: false,
+          onSort: (_, _) {},
+        ),
+      ),
+    );
+    expect(
+      find.bySemanticsLabel('Importe, ordenado descendente'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Proveedor, sin ordenar'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('las celdas no son paradas de Tab', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        ProductsTable(
+          products: List.generate(25, (i) => _product(i + 1)),
+          onSort: (_, _) {},
+        ),
+      ),
+    );
+    expect(find.byType(SelectableText), findsNothing);
+    expect(find.byType(SelectionArea), findsOneWidget);
   });
 
   testWidgets('ProductsTable pagina y notifica el ordenamiento', (

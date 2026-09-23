@@ -129,7 +129,10 @@ void sortProducts(List<Product> products, int columnIndex, bool ascending) {
     if (av == null) return 1;
     if (bv == null) return -1;
     final comparison = av.compareTo(bv);
-    return ascending ? comparison : -comparison;
+    if (comparison != 0) return ascending ? comparison : -comparison;
+    // List.sort no es estable: desempatar por id para que las filas con el
+    // mismo valor (p. ej. conceptos de la misma factura) no cambien de orden.
+    return (a.id ?? 0).compareTo(b.id ?? 0);
   });
 }
 
@@ -249,17 +252,22 @@ class _ProductsTableState extends State<ProductsTable> {
                           ),
                           const Divider(),
                           Expanded(
-                            child: Scrollbar(
-                              controller: _verticalController,
-                              thumbVisibility: true,
-                              child: ListView.separated(
+                            // Un solo SelectionArea permite seleccionar y
+                            // copiar texto (p. ej. un UUID) sin que cada celda
+                            // sea una parada de Tab.
+                            child: SelectionArea(
+                              child: Scrollbar(
                                 controller: _verticalController,
-                                itemCount: pageRows.length,
-                                separatorBuilder: (_, _) => const Divider(),
-                                itemBuilder: (context, index) => _DataRow(
-                                  product: pageRows[index],
-                                  widths: widths,
-                                  striped: index.isOdd,
+                                thumbVisibility: true,
+                                child: ListView.separated(
+                                  controller: _verticalController,
+                                  itemCount: pageRows.length,
+                                  separatorBuilder: (_, _) => const Divider(),
+                                  itemBuilder: (context, index) => _DataRow(
+                                    product: pageRows[index],
+                                    widths: widths,
+                                    striped: index.isOdd,
+                                  ),
                                 ),
                               ),
                             ),
@@ -375,24 +383,34 @@ class _HeaderCell extends StatelessWidget {
       ),
     );
 
-    return Tooltip(
-      message: 'Ordenar por ${column.label.toLowerCase()}',
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          width: width + _ProductsTableState._cellHPadding * 2,
-          height: 52,
-          padding: const EdgeInsets.symmetric(
-            horizontal: _ProductsTableState._cellHPadding,
-          ),
-          alignment: column.numeric
-              ? Alignment.centerRight
-              : Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: column.numeric
-                ? [icon, const SizedBox(width: 4), label]
-                : [label, const SizedBox(width: 4), icon],
+    final direction = ascending ? 'ascendente' : 'descendente';
+    return Semantics(
+      button: true,
+      label: isSorted
+          ? '${column.label}, ordenado $direction'
+          : '${column.label}, sin ordenar',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Tooltip(
+        message: 'Ordenar por ${column.label.toLowerCase()}',
+        excludeFromSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            width: width + _ProductsTableState._cellHPadding * 2,
+            height: 52,
+            padding: const EdgeInsets.symmetric(
+              horizontal: _ProductsTableState._cellHPadding,
+            ),
+            alignment: column.numeric
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: column.numeric
+                  ? [icon, const SizedBox(width: 4), label]
+                  : [label, const SizedBox(width: 4), icon],
+            ),
           ),
         ),
       ),
@@ -449,7 +467,7 @@ class _DataRowState extends State<_DataRow> {
                   horizontal: _ProductsTableState._cellHPadding,
                   vertical: 10,
                 ),
-                child: SelectableText(
+                child: Text(
                   productColumns[i].display(widget.product),
                   textAlign: productColumns[i].numeric
                       ? TextAlign.right
@@ -505,68 +523,93 @@ class _PaginationBar extends StatelessWidget {
     final canGoBack = currentPage > 0;
     final canGoForward = currentPage < totalPages - 1;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          Text(
-            'Mostrando ${Formatters.integer.format(start)}–'
-            '${Formatters.integer.format(end)} de '
-            '${Formatters.integer.format(total)}',
-            style: muted,
-          ),
-          const Spacer(),
-          Text('Filas por página', style: muted),
-          const SizedBox(width: 8),
-          DropdownButton<int>(
-            value: rowsPerPage,
-            underline: const SizedBox.shrink(),
-            borderRadius: BorderRadius.circular(8),
-            focusColor: Colors.transparent,
-            items: [
-              for (final value in ProductsTable.rowsPerPageOptions)
-                DropdownMenuItem(value: value, child: Text('$value')),
-            ],
-            onChanged: (value) {
-              if (value != null) onRowsPerPageChanged(value);
-            },
-          ),
-          const SizedBox(width: 24),
-          IconButton(
-            tooltip: 'Primera página',
-            onPressed: canGoBack ? () => onPageChanged(0) : null,
-            icon: const Icon(Icons.first_page),
-          ),
-          IconButton(
-            tooltip: 'Página anterior',
-            onPressed: canGoBack ? () => onPageChanged(currentPage - 1) : null,
-            icon: const Icon(Icons.chevron_left),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              'Página ${currentPage + 1} de $totalPages',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // En ventanas angostas se ocultan la etiqueta y los saltos a
+        // primera/última página para que la barra no se desborde.
+        final compact = constraints.maxWidth < 760;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Flexible(
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    'Mostrando ${Formatters.integer.format(start)}–'
+                    '${Formatters.integer.format(end)} de '
+                    '${Formatters.integer.format(total)}',
+                    style: muted,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              if (!compact) ...[
+                Text('Filas por página', style: muted),
+                const SizedBox(width: 8),
+              ],
+              Tooltip(
+                message: 'Filas por página',
+                child: DropdownButton<int>(
+                  value: rowsPerPage,
+                  underline: const SizedBox.shrink(),
+                  borderRadius: BorderRadius.circular(8),
+                  focusColor: Colors.transparent,
+                  items: [
+                    for (final value in ProductsTable.rowsPerPageOptions)
+                      DropdownMenuItem(value: value, child: Text('$value')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) onRowsPerPageChanged(value);
+                  },
+                ),
+              ),
+              SizedBox(width: compact ? 8 : 24),
+              if (!compact)
+                IconButton(
+                  tooltip: 'Primera página',
+                  onPressed: canGoBack ? () => onPageChanged(0) : null,
+                  icon: const Icon(Icons.first_page),
+                ),
+              IconButton(
+                tooltip: 'Página anterior',
+                onPressed: canGoBack
+                    ? () => onPageChanged(currentPage - 1)
+                    : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  compact
+                      ? '${currentPage + 1} / $totalPages'
+                      : 'Página ${currentPage + 1} de $totalPages',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Página siguiente',
+                onPressed: canGoForward
+                    ? () => onPageChanged(currentPage + 1)
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+              if (!compact)
+                IconButton(
+                  tooltip: 'Última página',
+                  onPressed: canGoForward
+                      ? () => onPageChanged(totalPages - 1)
+                      : null,
+                  icon: const Icon(Icons.last_page),
+                ),
+            ],
           ),
-          IconButton(
-            tooltip: 'Página siguiente',
-            onPressed: canGoForward
-                ? () => onPageChanged(currentPage + 1)
-                : null,
-            icon: const Icon(Icons.chevron_right),
-          ),
-          IconButton(
-            tooltip: 'Última página',
-            onPressed: canGoForward
-                ? () => onPageChanged(totalPages - 1)
-                : null,
-            icon: const Icon(Icons.last_page),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
