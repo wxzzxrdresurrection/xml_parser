@@ -1,12 +1,11 @@
 import 'package:excel/excel.dart';
-import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:xml_parser/models/products.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 
 class ExcelCreator {
-  static Future<String?> createExcel(List<Product> products, List<DataColumn> headers) async {
+  static Future<String?> createExcel(List<Product> products) async {
     var excel = Excel.createExcel();
     String sheetName = 'Productos';
     Sheet sheetObject = excel[sheetName];
