@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:xml_parser/services/db.dart';
+import 'package:xml_parser/ui/theme/app_theme.dart';
 import 'ui/pages/home_page.dart';
 
 Future<void> main() async {
@@ -35,24 +36,27 @@ Future<void> main() async {
     log(details.stack.toString());
   };
 
-  runZonedGuarded(() async {
-    log('APP START');
+  runZonedGuarded(
+    () async {
+      log('APP START');
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      log('INIT SQLITE FFI');
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        log('INIT SQLITE FFI');
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+      }
 
-    log('OPEN DATABASE');
-    await DatabaseHelper.instance.database;
+      log('OPEN DATABASE');
+      await DatabaseHelper.instance.database;
 
-    log('RUN APP');
-    runApp(const MyApp());
-  }, (error, stack) {
-    log('FATAL ERROR: $error');
-    log(stack.toString());
-  });
+      log('RUN APP');
+      runApp(const MyApp());
+    },
+    (error, stack) {
+      log('FATAL ERROR: $error');
+      log(stack.toString());
+    },
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -67,12 +71,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.light;
+  // Arranca siguiendo el tema del sistema operativo.
+  ThemeMode _themeMode = ThemeMode.system;
 
-  void toggleTheme() {
+  /// Cambia al tema opuesto del que se está mostrando actualmente.
+  void toggleTheme(Brightness current) {
     setState(() {
-      _themeMode =
-          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+      _themeMode = current == Brightness.dark
+          ? ThemeMode.light
+          : ThemeMode.dark;
     });
   }
 
@@ -80,10 +87,10 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CFDI Reader',
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       themeMode: _themeMode,
-      home: HomePage(),
+      home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );
   }
